@@ -41,18 +41,17 @@ static GPS *g_;
 
 #pragma mark CLLocationManagerDelegate
 
-- (void)locationManager:(CLLocationManager *)manager
-    didUpdateToLocation:(CLLocation *)newLocation
-           fromLocation:(CLLocation *)oldLocation{
-    
-    NSLog(@"Location updated: %@", newLocation);
+- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
+{
+    CLLocation *currentLocation = [locations lastObject];
+    NSLog(@"%f : %f", currentLocation.coordinate.latitude, currentLocation.coordinate.longitude);
     [self writeToFile];
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error{
     NSLog(@"locationManager - didFailWithError: %@", [error localizedDescription]);
     NSLog(@"domain:%@", [error domain]);
-    NSLog(@"code:%i", [error code]);
+    //NSLog(@"code:%i", [error code]);
     [self writeToFile];
 }
 
@@ -87,8 +86,14 @@ static GPS *g_;
         // move to the end of the file
         [fileHandle seekToEndOfFile];
         
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"yyyy-MM-dd HH:mm"];
+        
+        NSString *dateString = [formatter stringFromDate:[NSDate date]];
+        dateString = [NSString stringWithFormat:@"%@%@", dateString, @"\n"];
+        
         // convert the string to an NSData object
-        NSData *textData = [@"append" dataUsingEncoding:NSUTF8StringEncoding];
+        NSData *textData = [dateString dataUsingEncoding:NSUTF8StringEncoding];
         
         // write the data to the end of the file
         [fileHandle writeData:textData];
