@@ -3,6 +3,7 @@
 
 @implementation GPS
 static GPS *g_;
+NSTimer *timer;
 
 + (GPS*)get{
     if (!g_) {
@@ -30,6 +31,7 @@ static GPS *g_;
     }
     [manager_ requestAlwaysAuthorization];
     [manager_ startUpdatingLocation];
+    [self startTimer];
     
     return self;
 }
@@ -39,23 +41,36 @@ static GPS *g_;
     [manager_ startUpdatingLocation];
 }
 
+- (void)startTimer{
+    timer = [NSTimer scheduledTimerWithTimeInterval:60.0 target:self selector:@selector(recordTimer) userInfo:nil repeats:YES];
+}
+
+- (void)recordTimer{
+    [manager_ requestAlwaysAuthorization];
+    [self writeToFile: @"timer"];
+    //[[UIApplication sharedApplication] backgroundTimeRemaining];
+    //[manager_ stopUpdatingLocation];
+    //[manager_ startUpdatingLocation];
+    
+}
+
 #pragma mark CLLocationManagerDelegate
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
     CLLocation *currentLocation = [locations lastObject];
     NSLog(@"%f : %f", currentLocation.coordinate.latitude, currentLocation.coordinate.longitude);
-    [self writeToFile];
+    [self writeToFile: @"location Update"];
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error{
     NSLog(@"locationManager - didFailWithError: %@", [error localizedDescription]);
     NSLog(@"domain:%@", [error domain]);
     //NSLog(@"code:%i", [error code]);
-    [self writeToFile];
+    [self writeToFile: @"LocationManager failed"];
 }
 
--(void)writeToFile{
+-(void)writeToFile:(NSString *)message{
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     
@@ -70,7 +85,7 @@ static GPS *g_;
         // the file doesn't exist,we can write out the text using the  NSString convenience method
         
         NSError *error = noErr;
-        BOOL success = [@"log" writeToFile:fileName atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        BOOL success = [@"First Log" writeToFile:fileName atomically:YES encoding:NSUTF8StringEncoding error:&error];
         if (!success) {
             // handle the error
             NSLog(@"%@", error);
@@ -87,9 +102,10 @@ static GPS *g_;
         [fileHandle seekToEndOfFile];
         
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd HH:mm"];
+        [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
         
         NSString *dateString = [formatter stringFromDate:[NSDate date]];
+        dateString = [NSString stringWithFormat:@"%@ - %@", dateString, message];
         dateString = [NSString stringWithFormat:@"%@%@", dateString, @"\n"];
         
         // convert the string to an NSData object
