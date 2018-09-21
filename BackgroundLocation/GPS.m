@@ -36,6 +36,10 @@ NSTimer *timer;
     return self;
 }
 
+- (void)applicationDidEnterBackground{
+  [self writeToFile: @"applicationDidEnterBackground"];
+}
+
 - (void)start{
     NSLog(@"Start Tracking");
     [manager_ startUpdatingLocation];
@@ -71,6 +75,7 @@ NSTimer *timer;
 }
 
 -(void)writeToFile:(NSString *)message{
+    NSLog( @"%@", message);
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     

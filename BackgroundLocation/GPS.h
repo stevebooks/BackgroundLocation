@@ -9,5 +9,5 @@
 + (GPS*)get;
 - (id)init;
 - (void)start;
-
+- (void)applicationDidEnterBackground;
 @end

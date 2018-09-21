@@ -17,8 +17,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    GPS *gps = [GPS get];
-    [gps start];
 }
 
 - (void)didReceiveMemoryWarning {

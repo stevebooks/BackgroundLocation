@@ -7,20 +7,23 @@
 //
 
 #import "AppDelegate.h"
+#import "GPS.h"
 
 @interface AppDelegate ()
 
 @end
 
 @implementation AppDelegate
-
+  GPS *gps;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    gps = [GPS get];
+    [gps start];
     // Override point for customization after application launch.
-    if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
-        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeSound
-                                                                                                              categories:nil]];
-    }
+//    if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
+//        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeSound
+//                                                                                                              categories:nil]];
+    //}
     return YES;
 }
 
@@ -33,12 +36,13 @@
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     NSLog(@"App did enter background");
+    [gps applicationDidEnterBackground];
     
-    UILocalNotification *notification = [[UILocalNotification alloc] init];
-    notification.fireDate = [[NSDate date] dateByAddingTimeInterval:60];
-    notification.alertBody = @"Alert";
-    notification.repeatInterval=kCFCalendarUnitHour;
-    [[UIApplication sharedApplication] scheduleLocalNotification:notification];
+//    UILocalNotification *notification = [[UILocalNotification alloc] init];
+//    notification.fireDate = [[NSDate date] dateByAddingTimeInterval:60];
+//    notification.alertBody = @"Alert";
+//    notification.repeatInterval=kCFCalendarUnitHour;
+//    [[UIApplication sharedApplication] scheduleLocalNotification:notification];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {
