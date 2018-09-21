@@ -52,10 +52,6 @@ NSTimer *timer;
 - (void)recordTimer{
     [manager_ requestAlwaysAuthorization];
     [self writeToFile: @"timer"];
-    //[[UIApplication sharedApplication] backgroundTimeRemaining];
-    //[manager_ stopUpdatingLocation];
-    //[manager_ startUpdatingLocation];
-    
 }
 
 #pragma mark CLLocationManagerDelegate
@@ -70,7 +66,6 @@ NSTimer *timer;
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error{
     NSLog(@"locationManager - didFailWithError: %@", [error localizedDescription]);
     NSLog(@"domain:%@", [error domain]);
-    //NSLog(@"code:%i", [error code]);
     [self writeToFile: @"LocationManager failed"];
 }
 
