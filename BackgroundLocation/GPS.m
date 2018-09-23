@@ -1,9 +1,17 @@
 #import <Foundation/Foundation.h>
 #import "GPS.h"
+#import <ExternalAccessory/ExternalAccessory.h>
+#import <CoreBluetooth/CoreBluetooth.h>
+#import <AVFoundation/AVFoundation.h>
+
+@interface GPS () <CBCentralManagerDelegate>
+@end
 
 @implementation GPS
 static GPS *g_;
 NSTimer *timer;
+EAAccessoryManager *accessoryManager;
+NSNotificationCenter *notificationCenter;
 
 + (GPS*)get{
     if (!g_) {
@@ -26,18 +34,62 @@ NSTimer *timer;
     manager_.desiredAccuracy = kCLLocationAccuracyNearestTenMeters;
     manager_.desiredAccuracy = kCLLocationAccuracyBest;
     manager_.delegate = self;
+    
+    
+    
+    [manager_ requestAlwaysAuthorization];
+    
     if ([manager_ respondsToSelector:@selector(pausesLocationUpdatesAutomatically)]) {
         manager_.pausesLocationUpdatesAutomatically = NO;
     }
-    [manager_ requestAlwaysAuthorization];
+    
+    if ([manager_ respondsToSelector:@selector(allowsBackgroundLocationUpdates)]) {
+        manager_.allowsBackgroundLocationUpdates = YES;
+    }
+    
     [manager_ startUpdatingLocation];
     [self startTimer];
+    
+    notificationCenter = [NSNotificationCenter defaultCenter];
+    [notificationCenter addObserver:self
+                           selector:@selector(EAAccessoryDidConnect:)
+                               name:EAAccessoryDidConnectNotification
+                             object:nil];
+    
+    [notificationCenter addObserver:self
+                        selector:@selector(EAAccessoryDidDisconnect:)
+                        name:EAAccessoryDidDisconnectNotification
+                        object:nil];
+    
+    accessoryManager = [EAAccessoryManager sharedAccessoryManager];
+    [accessoryManager registerForLocalNotifications];
     
     return self;
 }
 
+- (void)EAAccessoryDidConnect:(NSNotification *)notification{
+    [self writeToFile:@"EAAccessoryDidConnect"];
+    EAAccessory *accessory = notification.userInfo[EAAccessoryKey];
+    [self writeToFile: [NSString stringWithFormat:@"Serial Number: %@", accessory.serialNumber]];
+    [self writeToFile: [NSString stringWithFormat:@"Manufacturer: %@", accessory.manufacturer]];
+    [self writeToFile: [NSString stringWithFormat:@"Name: %@", accessory.name]];
+    [self writeToFile: [NSString stringWithFormat:@"Model Number: %@", accessory.modelNumber]];
+}
+
+- (void)EAAccessoryDidDisconnect:(NSNotification *)notification{
+    [self writeToFile:@"EAAccessoryDidDisconnect"];
+    EAAccessory *accessory = notification.userInfo[EAAccessoryKey];
+    [self writeToFile: [NSString stringWithFormat:@"Serial Number: %@", accessory.serialNumber]];
+    [self writeToFile: [NSString stringWithFormat:@"Manufacturer: %@", accessory.manufacturer]];
+    [self writeToFile: [NSString stringWithFormat:@"Name: %@", accessory.name]];
+    [self writeToFile: [NSString stringWithFormat:@"Model Number: %@", accessory.modelNumber]];
+}
+
 - (void)applicationDidEnterBackground{
   [self writeToFile: @"applicationDidEnterBackground"];
+    //[manager_ stopMonitoringSignificantLocationChanges];
+    [manager_ requestAlwaysAuthorization];
+    //[manager_ startMonitoringSignificantLocationChanges];
 }
 
 - (void)start{
@@ -46,12 +98,13 @@ NSTimer *timer;
 }
 
 - (void)startTimer{
-    timer = [NSTimer scheduledTimerWithTimeInterval:60.0 target:self selector:@selector(recordTimer) userInfo:nil repeats:YES];
+    timer = [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(recordTimer) userInfo:nil repeats:YES];
 }
 
 - (void)recordTimer{
     [manager_ requestAlwaysAuthorization];
     [self writeToFile: @"timer"];
+    [self connectedPorts];
 }
 
 #pragma mark CLLocationManagerDelegate
@@ -61,6 +114,14 @@ NSTimer *timer;
     CLLocation *currentLocation = [locations lastObject];
     NSLog(@"%f : %f", currentLocation.coordinate.latitude, currentLocation.coordinate.longitude);
     [self writeToFile: @"location Update"];
+    [self connectedPorts];
+//    NSArray *connectedAccessories = [[EAAccessoryManager sharedAccessoryManager] connectedAccessories];
+//    for (EAAccessory *accessory in connectedAccessories) {
+//        [self writeToFile: [NSString stringWithFormat:@"Serial Number: %@", accessory.serialNumber]];
+//        [self writeToFile: [NSString stringWithFormat:@"Manufacturer: %@", accessory.manufacturer]];
+//        [self writeToFile: [NSString stringWithFormat:@"Name: %@", accessory.name]];
+//        [self writeToFile: [NSString stringWithFormat:@"Model Number: %@", accessory.modelNumber]];
+//    }
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error{
@@ -117,6 +178,26 @@ NSTimer *timer;
         // clean up
         [fileHandle closeFile];
     }
+}
+
+- (void) connectedPorts{
+    AVAudioSessionRouteDescription *currentRoute = [[AVAudioSession sharedInstance] currentRoute];
+    //NSArray *inputsForRoute = currentRoute.inputs;
+    //NSArray *outputsForRoute = currentRoute.outputs;
+    //AVAudioSessionPortDescription *outPortDesc = [outputsForRoute objectAtIndex:0];
+    //[self writeToFile: [NSString stringWithFormat:@"Current outport type: %@", outPortDesc.portType]];
+    
+    //AVAudioSessionPortDescription *inPortDesc = [inputsForRoute objectAtIndex:0];
+    //[self writeToFile: [NSString stringWithFormat:@"current inPort type %@", inPortDesc.portType]];
+    [self writeToFile: [NSString stringWithFormat:@"currentRoute description: %@", currentRoute.description]];
+}
+
+// Core Bluetooth Delegate
+
+- (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
+{
+    [self writeToFile:@"didDiscoverPeriphal"];
+    [self writeToFile: [NSString stringWithFormat:@"Name: %@", peripheral.name]];
 }
 
 @end

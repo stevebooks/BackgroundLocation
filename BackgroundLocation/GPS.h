@@ -10,4 +10,6 @@
 - (id)init;
 - (void)start;
 - (void)applicationDidEnterBackground;
+- (void)EAAccessoryDidConnect:(NSNotification *)notification;
+- (void)EAAccessoryDidDisconnect:(NSNotification *)notification;
 @end

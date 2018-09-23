@@ -8,6 +8,8 @@
 
 #import "AppDelegate.h"
 #import "GPS.h"
+#import "ViewController.h"
+#import <AVFoundation/AVFoundation.h>
 
 @interface AppDelegate ()
 
@@ -17,13 +19,30 @@
   GPS *gps;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    gps = [GPS get];
-    [gps start];
+    
     // Override point for customization after application launch.
 //    if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
 //        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeSound
 //                                                                                                              categories:nil]];
     //}
+    [self prepareAudioSession];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(myInterruptionSelector:)
+                                                 name:AVAudioSessionInterruptionNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(myRouteChangeSelector:)
+                                                 name:AVAudioSessionRouteChangeNotification
+                                               object:nil];
+    
+    gps = [GPS get];
+    [gps start];
+    
+    ViewController * vc = [[ViewController alloc] init];
+    [self.window makeKeyAndVisible];
+    [self.window.rootViewController presentViewController:vc animated:YES completion:NULL];
+    
     return YES;
 }
 
@@ -55,6 +74,44 @@
 
 - (void)applicationWillTerminate:(UIApplication *)application {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+}
+
+- (BOOL)prepareAudioSession {
+    
+    // deactivate session
+    BOOL success = [[AVAudioSession sharedInstance] setActive:NO error: nil];
+    if (!success) {
+        NSLog(@"deactivationError");
+    }
+    
+    // set audio session category AVAudioSessionCategoryPlayAndRecord options AVAudioSessionCategoryOptionAllowBluetooth
+    success = [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionAllowBluetooth error:nil];
+    if (!success) {
+        NSLog(@"setCategoryError");
+    }
+    
+    // activate audio session
+    success = [[AVAudioSession sharedInstance] setActive:YES error: nil];
+    if (!success) {
+        NSLog(@"activationError");
+    }
+    
+    return success;
+    
+}
+
+- (void)myRouteChangeSelector:(NSNotification*)notification {
+    AVAudioSessionRouteDescription *currentRoute = [[AVAudioSession sharedInstance] currentRoute];
+    NSArray *inputsForRoute = currentRoute.inputs;
+    NSArray *outputsForRoute = currentRoute.outputs;
+    AVAudioSessionPortDescription *outPortDesc = [outputsForRoute objectAtIndex:0];
+    NSLog(@"current outport type %@", outPortDesc.portType);
+    AVAudioSessionPortDescription *inPortDesc = [inputsForRoute objectAtIndex:0];
+    NSLog(@"current inPort type %@", inPortDesc.portType);
+}
+
+- (void)myInterruptionSelector:(NSNotification*)notification {
+    NSLog(@"myInterruptionSelector");
 }
 
 @end
